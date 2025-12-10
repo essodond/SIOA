@@ -1,74 +1,34 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, DessertIcon as PassportIcon, Briefcase, Info, Crown, Search, Accessibility } from "lucide-react"
 
-interface Service {
-  id: number;
-  name: string;
-  description: string;
-}
+const SERVICES = [
+  { id: 1, name: "Enregistrement", Icon: PassportIcon, color: "from-blue-500 to-blue-600" },
+  { id: 2, name: "Réclamation Bagages", Icon: Briefcase, color: "from-green-500 to-green-600" },
+  { id: 3, name: "Information", Icon: Info, color: "from-yellow-500 to-yellow-600" },
+  { id: 4, name: "Service VIP", Icon: Crown, color: "from-purple-500 to-purple-600" },
+  { id: 5, name: "Objets Trouvés", Icon: Search, color: "from-red-500 to-red-600" },
+  { id: 6, name: "Accessibilité", Icon: Accessibility, color: "from-orange-500 to-orange-600" },
+]
 
 export default function KioskPage() {
-  const [services, setServices] = useState<Service[]>([]);
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [ticketNumber, setTicketNumber] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [selectedService, setSelectedService] = useState<number | null>(null)
+  const [ticketNumber, setTicketNumber] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const response = await fetch("http://localhost:8000/api/services/"); // Assurez-vous que votre backend tourne sur ce port
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data: Service[] = await response.json();
-        setServices(data);
-      } catch (error: any) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchServices();
-  }, []);
-
-  const handleServiceSelect = async (service: Service) => {
-    setSelectedService(service);
-    try {
-      const response = await fetch("http://localhost:8000/api/tickets/create/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ service: service.id }),
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      setTicketNumber(data.ticket_number);
-    } catch (error: any) {
-      setError(error.message);
-    }
-  };
-
-  const handleReset = () => {
-    setSelectedService(null);
-    setTicketNumber(null);
-    setError(null);
-  };
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Chargement des services...</div>;
+  const handleServiceSelect = (serviceId: number) => {
+    setSelectedService(serviceId)
+    const ticketNum = `${String(serviceId).padStart(2, "0")}${Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, "0")}`
+    setTicketNumber(ticketNum)
   }
 
-  if (error) {
-    return <div className="min-h-screen flex items-center justify-center text-red-500">Erreur: {error}</div>;
+  const handleReset = () => {
+    setSelectedService(null)
+    setTicketNumber(null)
   }
 
   return (
@@ -103,7 +63,7 @@ export default function KioskPage() {
               <div className="glass rounded-2xl p-6 space-y-3">
                 <p className="text-sm text-slate-700">Service</p>
                 <p className="text-2xl font-semibold text-slate-900">
-                  {selectedService?.name}
+                  {SERVICES.find((s) => s.id === selectedService)?.name}
                 </p>
               </div>
 
@@ -122,56 +82,24 @@ export default function KioskPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
-            {services.map((service) => {
-              // Déterminer l'icône et la couleur en fonction du nom du service
-              let IconComponent;
-              let colorClass;
-              switch (service.name) {
-                case "Enregistrement":
-                  IconComponent = PassportIcon;
-                  colorClass = "from-blue-500 to-blue-600";
-                  break;
-                case "Réclamation Bagages":
-                  IconComponent = Briefcase;
-                  colorClass = "from-green-500 to-green-600";
-                  break;
-                case "Information":
-                  IconComponent = Info;
-                  colorClass = "from-yellow-500 to-yellow-600";
-                  break;
-                case "Service VIP":
-                  IconComponent = Crown;
-                  colorClass = "from-purple-500 to-purple-600";
-                  break;
-                case "Objets Trouvés":
-                  IconComponent = Search;
-                  colorClass = "from-red-500 to-red-600";
-                  break;
-                case "Accessibilité":
-                  IconComponent = Accessibility;
-                  colorClass = "from-orange-500 to-orange-600";
-                  break;
-                default:
-                  IconComponent = Info; // Icône par défaut
-                  colorClass = "from-gray-500 to-gray-600"; // Couleur par défaut
-              }
-
+            {SERVICES.map((service) => {
+              const IconComponent = service.Icon
               return (
                 <button
                   key={service.id}
-                  onClick={() => handleServiceSelect(service)}
-                  className={`bg-gradient-to-br ${colorClass} rounded-2xl p-8 text-white hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer group backdrop-blur-sm`}
+                  onClick={() => handleServiceSelect(service.id)}
+                  className={`bg-gradient-to-br ${service.color} rounded-2xl p-8 text-white hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer group backdrop-blur-sm`}
                 >
                   <div className="space-y-4">
                     <IconComponent className="h-16 w-16 group-hover:scale-110 transition-transform" />
                     <h3 className="text-2xl font-bold">{service.name}</h3>
                   </div>
                 </button>
-              );
+              )
             })}
           </div>
         )}
       </div>
     </div>
-  );
+  )
 }

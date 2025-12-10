@@ -97,78 +97,56 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$fronten
 ;
 ;
 ;
+const SERVICES = [
+    {
+        id: 1,
+        name: "Enregistrement",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$dessert$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__DessertIcon$3e$__["DessertIcon"],
+        color: "from-blue-500 to-blue-600"
+    },
+    {
+        id: 2,
+        name: "Réclamation Bagages",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$briefcase$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Briefcase$3e$__["Briefcase"],
+        color: "from-green-500 to-green-600"
+    },
+    {
+        id: 3,
+        name: "Information",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$info$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Info$3e$__["Info"],
+        color: "from-yellow-500 to-yellow-600"
+    },
+    {
+        id: 4,
+        name: "Service VIP",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$crown$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Crown$3e$__["Crown"],
+        color: "from-purple-500 to-purple-600"
+    },
+    {
+        id: 5,
+        name: "Objets Trouvés",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$search$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Search$3e$__["Search"],
+        color: "from-red-500 to-red-600"
+    },
+    {
+        id: 6,
+        name: "Accessibilité",
+        Icon: __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$accessibility$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Accessibility$3e$__["Accessibility"],
+        color: "from-orange-500 to-orange-600"
+    }
+];
 function KioskPage() {
-    const [services, setServices] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([]);
     const [selectedService, setSelectedService] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
     const [ticketNumber, setTicketNumber] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
-    const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(true);
-    const [error, setError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
-    (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
-        const fetchServices = async ()=>{
-            try {
-                const response = await fetch("http://localhost:8000/api/services/"); // Assurez-vous que votre backend tourne sur ce port
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                setServices(data);
-            } catch (error) {
-                setError(error.message);
-            } finally{
-                setLoading(false);
-            }
-        };
-        fetchServices();
-    }, []);
-    const handleServiceSelect = async (service)=>{
-        setSelectedService(service);
-        try {
-            const response = await fetch("http://localhost:8000/api/tickets/create/", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    service: service.id
-                })
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            setTicketNumber(data.ticket_number);
-        } catch (error) {
-            setError(error.message);
-        }
+    const handleServiceSelect = (serviceId)=>{
+        setSelectedService(serviceId);
+        const ticketNum = `${String(serviceId).padStart(2, "0")}${Math.floor(Math.random() * 10000).toString().padStart(4, "0")}`;
+        setTicketNumber(ticketNum);
     };
     const handleReset = ()=>{
         setSelectedService(null);
         setTicketNumber(null);
-        setError(null);
     };
-    if (loading) {
-        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-            className: "min-h-screen flex items-center justify-center",
-            children: "Chargement des services..."
-        }, void 0, false, {
-            fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-            lineNumber: 67,
-            columnNumber: 12
-        }, this);
-    }
-    if (error) {
-        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-            className: "min-h-screen flex items-center justify-center text-red-500",
-            children: [
-                "Erreur: ",
-                error
-            ]
-        }, void 0, true, {
-            fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-            lineNumber: 71,
-            columnNumber: 12
-        }, this);
-    }
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4",
         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -185,7 +163,7 @@ function KioskPage() {
                                     children: "Borne d'Enregistrement"
                                 }, void 0, false, {
                                     fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                    lineNumber: 80,
+                                    lineNumber: 40,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -193,13 +171,13 @@ function KioskPage() {
                                     children: "Sélectionnez votre service"
                                 }, void 0, false, {
                                     fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                    lineNumber: 81,
+                                    lineNumber: 41,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                            lineNumber: 79,
+                            lineNumber: 39,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -213,25 +191,25 @@ function KioskPage() {
                                         className: "mr-2 h-5 w-5"
                                     }, void 0, false, {
                                         fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                        lineNumber: 89,
+                                        lineNumber: 49,
                                         columnNumber: 15
                                     }, this),
                                     "Retour"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                lineNumber: 84,
+                                lineNumber: 44,
                                 columnNumber: 13
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                            lineNumber: 83,
+                            lineNumber: 43,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                    lineNumber: 78,
+                    lineNumber: 38,
                     columnNumber: 9
                 }, this),
                 ticketNumber ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -247,7 +225,7 @@ function KioskPage() {
                                         children: "Votre Ticket"
                                     }, void 0, false, {
                                         fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                        lineNumber: 99,
+                                        lineNumber: 59,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -255,13 +233,13 @@ function KioskPage() {
                                         children: ticketNumber
                                     }, void 0, false, {
                                         fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                        lineNumber: 100,
+                                        lineNumber: 60,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                lineNumber: 98,
+                                lineNumber: 58,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -272,21 +250,21 @@ function KioskPage() {
                                         children: "Service"
                                     }, void 0, false, {
                                         fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                        lineNumber: 104,
+                                        lineNumber: 64,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                         className: "text-2xl font-semibold text-slate-900",
-                                        children: selectedService?.name
+                                        children: SERVICES.find((s)=>s.id === selectedService)?.name
                                     }, void 0, false, {
                                         fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                        lineNumber: 105,
+                                        lineNumber: 65,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                lineNumber: 103,
+                                lineNumber: 63,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -297,7 +275,7 @@ function KioskPage() {
                                         children: "Ticket émis avec succès!"
                                     }, void 0, false, {
                                         fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                        lineNumber: 111,
+                                        lineNumber: 71,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -305,13 +283,13 @@ function KioskPage() {
                                         children: "Veuillez vous diriger vers le comptoir"
                                     }, void 0, false, {
                                         fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                        lineNumber: 112,
+                                        lineNumber: 72,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                lineNumber: 110,
+                                lineNumber: 70,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -320,57 +298,26 @@ function KioskPage() {
                                 children: "Émettre un Autre Ticket"
                             }, void 0, false, {
                                 fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                lineNumber: 115,
+                                lineNumber: 75,
                                 columnNumber: 15
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                        lineNumber: 97,
+                        lineNumber: 57,
                         columnNumber: 13
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                    lineNumber: 96,
+                    lineNumber: 56,
                     columnNumber: 11
                 }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6",
-                    children: services.map((service)=>{
-                        // Déterminer l'icône et la couleur en fonction du nom du service
-                        let IconComponent;
-                        let colorClass;
-                        switch(service.name){
-                            case "Enregistrement":
-                                IconComponent = __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$dessert$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__DessertIcon$3e$__["DessertIcon"];
-                                colorClass = "from-blue-500 to-blue-600";
-                                break;
-                            case "Réclamation Bagages":
-                                IconComponent = __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$briefcase$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Briefcase$3e$__["Briefcase"];
-                                colorClass = "from-green-500 to-green-600";
-                                break;
-                            case "Information":
-                                IconComponent = __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$info$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Info$3e$__["Info"];
-                                colorClass = "from-yellow-500 to-yellow-600";
-                                break;
-                            case "Service VIP":
-                                IconComponent = __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$crown$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Crown$3e$__["Crown"];
-                                colorClass = "from-purple-500 to-purple-600";
-                                break;
-                            case "Objets Trouvés":
-                                IconComponent = __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$search$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Search$3e$__["Search"];
-                                colorClass = "from-red-500 to-red-600";
-                                break;
-                            case "Accessibilité":
-                                IconComponent = __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$accessibility$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Accessibility$3e$__["Accessibility"];
-                                colorClass = "from-orange-500 to-orange-600";
-                                break;
-                            default:
-                                IconComponent = __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$info$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Info$3e$__["Info"]; // Icône par défaut
-                                colorClass = "from-gray-500 to-gray-600"; // Couleur par défaut
-                        }
+                    children: SERVICES.map((service)=>{
+                        const IconComponent = service.Icon;
                         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                            onClick: ()=>handleServiceSelect(service),
-                            className: `bg-gradient-to-br ${colorClass} rounded-2xl p-8 text-white hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer group backdrop-blur-sm`,
+                            onClick: ()=>handleServiceSelect(service.id),
+                            className: `bg-gradient-to-br ${service.color} rounded-2xl p-8 text-white hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer group backdrop-blur-sm`,
                             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "space-y-4",
                                 children: [
@@ -378,7 +325,7 @@ function KioskPage() {
                                         className: "h-16 w-16 group-hover:scale-110 transition-transform"
                                     }, void 0, false, {
                                         fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                        lineNumber: 166,
+                                        lineNumber: 94,
                                         columnNumber: 21
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Downloads$2f$ANAC$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -386,35 +333,35 @@ function KioskPage() {
                                         children: service.name
                                     }, void 0, false, {
                                         fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                        lineNumber: 167,
+                                        lineNumber: 95,
                                         columnNumber: 21
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                                lineNumber: 165,
+                                lineNumber: 93,
                                 columnNumber: 19
                             }, this)
                         }, service.id, false, {
                             fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                            lineNumber: 160,
+                            lineNumber: 88,
                             columnNumber: 17
                         }, this);
                     })
                 }, void 0, false, {
                     fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-                    lineNumber: 124,
+                    lineNumber: 84,
                     columnNumber: 11
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-            lineNumber: 76,
+            lineNumber: 36,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/Downloads/ANAC/frontend/app/kiosk/page.tsx",
-        lineNumber: 75,
+        lineNumber: 35,
         columnNumber: 5
     }, this);
 }

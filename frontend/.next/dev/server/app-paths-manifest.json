@@ -1,8 +1,4 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/agent/page": "app/agent/page.js",
-  "/display/page": "app/display/page.js",
-  "/kiosk/page": "app/kiosk/page.js",
-  "/page": "app/page.js",
-  "/supervisor/page": "app/supervisor/page.js"
+  "/sioa-kiosk/page": "app/sioa-kiosk/page.js"
 }
