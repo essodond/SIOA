@@ -2,14 +2,14 @@ from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 import datetime
+import math
 
 # ============================
-#        SERVICE
+#        SERVICE (Ex: Check-in, Bagages)
 # ============================
 class Service(models.Model):
-    # Ex: "Enregistrement", "Bagages"
     name = models.CharField(max_length=100, unique=True)
-    # Lettre préfixe pour le ticket (ex: 'E' pour Enregistrement -> E001)
+    # Lettre préfixe pour le ticket (Ex: 'A' pour Check-in)
     prefix = models.CharField(max_length=1, default="A", help_text="Préfixe pour les tickets (ex: A, B, C)")
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
@@ -24,17 +24,22 @@ class Service(models.Model):
 
 
 # ============================
-#        COMPANY
+#        COMPANY (Compagnie Aérienne)
 # ============================
 class Company(models.Model):
     name = models.CharField(max_length=200, unique=True)
-    code = models.CharField(max_length=10, blank=True, null=True)
+    code = models.CharField(max_length=10, blank=True, null=True, help_text="Code IATA (Ex: AF, ET)")
     logo_url = models.URLField(blank=True, null=True)
     
-    # Donnée pour gérer l'allocation des comptoirs
     average_daily_passengers = models.PositiveIntegerField(
         default=0, 
-        help_text="Nombre moyen de passagers par jour. Sert à calculer le nombre de comptoirs nécessaires."
+        help_text="Nombre moyen de passagers par jour."
+    )
+
+    # T_moyen pour le calcul du TAE
+    average_service_time_minutes = models.PositiveIntegerField(
+        default=3, 
+        help_text="Temps de service moyen par voyageur (en minutes)."
     )
 
     class Meta:
@@ -46,14 +51,13 @@ class Company(models.Model):
         return self.name
     
     def get_recommended_counters(self):
-        """Calcule le nombre de comptoirs recommandés (1 pour 50 pax par exemple)."""
+        """Calcule le nombre de comptoirs recommandés (1 pour 50 pax)."""
         if self.average_daily_passengers == 0: return 0
-        import math
         return math.ceil(self.average_daily_passengers / 50)
 
 
 # ============================
-#        COUNTER
+#        COUNTER (Comptoir)
 # ============================
 class Counter(models.Model):
     # Les 24 comptoirs fixes (A1-A12, B1-B12)
@@ -61,6 +65,11 @@ class Counter(models.Model):
         (f"{zone}{num}", f"Comptoir {zone}{num}")
         for zone in ['A', 'B']
         for num in range(1, 13)
+    ]
+    STATUS_CHOICES = [
+        ("LIBRE", "Libre"),
+        ("OCCUPE", "Occupé"),
+        ("FERME", "Fermé"),
     ]
 
     name = models.CharField(
@@ -79,20 +88,28 @@ class Counter(models.Model):
         related_name="assigned_counters"
     )
     
-    is_active = models.BooleanField(default=True)
-
+    # Statut d'occupation du comptoir
+    status = models.CharField(
+        max_length=10, 
+        choices=STATUS_CHOICES, 
+        default="LIBRE",
+        help_text="Statut d'occupation du comptoir."
+    )
+    
+    # Ancien champ is_active remplacé par le statut 'FERME' vs 'LIBRE'/'OCCUPE'
+    
     class Meta:
         verbose_name = "Comptoir"
         verbose_name_plural = "Comptoirs"
         ordering = ["name"]
 
     def __str__(self):
-        comp = f" -> {self.assigned_company.name}" if self.assigned_company else " (Libre)"
-        return f"{self.get_name_display()}{comp}"
+        comp = self.assigned_company.name if self.assigned_company else "Non Assigné"
+        return f"{self.get_name_display()} ({comp}) - {self.status}"
 
 
 # ============================
-#        FLIGHT
+#        FLIGHT (Vol)
 # ============================
 class Flight(models.Model):
     STATUS_CHOICES = [
@@ -107,18 +124,21 @@ class Flight(models.Model):
     
     departure_time = models.DateTimeField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="ON_TIME")
+    gate = models.CharField(max_length=10, blank=True, null=True) # Ajout pour l'info vol
 
     class Meta:
         verbose_name = "Vol"
         verbose_name_plural = "Vols"
+        # Contrainte pour s'assurer qu'un vol est unique par numéro et par jour
+        unique_together = ('flight_number', 'departure_time',) 
         ordering = ["departure_time"]
 
     def __str__(self):
-        return f"{self.flight_number}"
+        return f"{self.flight_number} ({self.company.code})"
 
 
 # ============================
-#        TICKET
+#        TICKET (Voyageur/File d'attente)
 # ============================
 class Ticket(models.Model):
     STATUS_CHOICES = [
@@ -128,8 +148,7 @@ class Ticket(models.Model):
         ("CANCELLED", "Annulé"),
     ]
 
-    # 1. INPUT : Numéro de Vol entré par le passager (Ex: AF480)
-    # Ce n'est pas unique car plusieurs passagers sont sur le même vol.
+    # INPUT : Numéro de Vol saisi par le passager (non unique)
     ticket_number = models.CharField(
         max_length=20, 
         help_text="Numéro de vol saisi par le passager (ex: AF480)"
@@ -137,7 +156,7 @@ class Ticket(models.Model):
     
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="tickets")
 
-    # 2. OUTPUT : Numéro de file d'attente généré (Ex: A001)
+    # OUTPUT : Numéro de file d'attente généré (Ex: A001)
     queue_number = models.CharField(
         max_length=10, 
         blank=True, 
@@ -146,18 +165,23 @@ class Ticket(models.Model):
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="WAITING")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="WAITING") 
     
-    # 3. Initialisé quand la réceptionniste appelle
     called_at = models.DateTimeField(blank=True, null=True)
     
     # Le comptoir qui traite le ticket
     counter = models.ForeignKey(Counter, on_delete=models.SET_NULL, null=True, blank=True, related_name="tickets")
+    
+    # Temps d'attente estimé, calculé lors de la création du ticket
+    estimated_waiting_time_minutes = models.PositiveIntegerField(
+        default=0, 
+        help_text="Temps d'attente estimé à l'enregistrement (en minutes)."
+    )
 
     class Meta:
         verbose_name = "Ticket"
         verbose_name_plural = "Tickets"
-        ordering = ["created_at"] # FIFO (First In, First Out)
+        ordering = ["created_at"] # Premier arrivé, premier servi (FIFO)
 
     def __str__(self):
         return f"File {self.queue_number} (Vol {self.ticket_number})"
@@ -178,12 +202,12 @@ class Ticket(models.Model):
 
     def call_ticket(self, counter: Counter):
         """
-        Méthode appelée quand la réceptionniste clique sur 'Suivant'.
+        Méthode pour appeler le ticket au comptoir.
         """
-        # Vérification optionnelle : Le comptoir doit être assigné à une compagnie
-        # qui correspond au vol indiqué (si on fait le lien avec Flight, sinon on laisse passer)
+        # Vous pourriez ajouter ici une vérification pour s'assurer 
+        # que le comptoir.assigned_company correspond au code du ticket_number.
         
         self.status = "CALLED"
-        self.called_at = timezone.now() # C'est ici que la date est initialisée
+        self.called_at = timezone.now()
         self.counter = counter
         self.save()
