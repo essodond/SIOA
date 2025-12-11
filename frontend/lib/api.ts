@@ -34,6 +34,7 @@ export interface TicketStatistics {
   total_waiting_tickets: number;
   waiting_tickets_by_company: Array<{ counter__assigned_company__name: string; counter__assigned_company__code: string; count: number }>;
   waiting_tickets_by_service: Array<{ service__name: string; count: number }>;
+  debug_tickets_info?: Array<{ ticket_number: string; counter: string; company: string; service: string; status: string }>;
 }
 
 export interface Ticket {

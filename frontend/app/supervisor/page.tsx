@@ -4,13 +4,14 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, TrendingUp, Users, Clock, CheckCircle2 } from "lucide-react"
-import { getCounters, getTicketStatistics, Counter, TicketStatistics } from "@/lib/api"
+import { getCounters, getTicketStatistics, getCounterTickets, Counter, TicketStatistics, Ticket } from "@/lib/api"
 
 export default function SupervisorPage() {
   const [counters, setCounters] = useState<Counter[]>([])
   const [ticketStats, setTicketStats] = useState<TicketStatistics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [ticketsByCounter, setTicketsByCounter] = useState<Record<number, Ticket[]>>({})
 
   useEffect(() => {
     async function fetchData() {
@@ -19,6 +20,17 @@ export default function SupervisorPage() {
         const fetchedTicketStats = await getTicketStatistics()
         setCounters(fetchedCounters)
         setTicketStats(fetchedTicketStats)
+
+        // Récupérer les tickets pour chaque comptoir en parallèle
+        const ticketsPromises = fetchedCounters.map(async (c) => {
+          const tickets = await getCounterTickets(c.id)
+          return { id: c.id, tickets }
+        })
+
+        const ticketsResults = await Promise.all(ticketsPromises)
+        const map: Record<number, Ticket[]> = {}
+        ticketsResults.forEach((r) => (map[r.id] = r.tickets))
+        setTicketsByCounter(map)
       } catch (err) {
         setError("Failed to fetch data")
         console.error(err)
@@ -50,7 +62,8 @@ export default function SupervisorPage() {
   // For avgWaitTime and totalServed, we don't have direct API support yet, so we'll keep placeholders or remove them.
   // For now, let's set them to 0 or derive them if possible from available data.
   const avgWaitTime = 0 // Placeholder
-  const totalServed = 0 // Placeholder
+  // Try to derive totalServed from debug info if present
+  const totalServed = ticketStats?.debug_tickets_info ? ticketStats.debug_tickets_info.filter((t) => t.status === 'DONE').length : 0
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -177,8 +190,10 @@ export default function SupervisorPage() {
                     </td>
                     <td className="px-6 py-4 font-semibold text-slate-900">{counter.assigned_company ? counter.assigned_company.name : "N/A"}</td>
                     <td className="px-6 py-4 text-slate-600">{counter.status === "OCCUPE" ? "Oui" : "Non"}</td>
-                    <td className="px-6 py-4 text-slate-600">N/A</td> {/* Placeholder for current ticket */}
-                    <td className="px-6 py-4 text-slate-600">N/A</td> {/* Placeholder for queued */}
+                    <td className="px-6 py-4 font-semibold text-slate-900">{
+                      (ticketsByCounter[counter.id] || []).find((t) => t.status === 'CALLED')?.queue_number || 'N/A'
+                    }</td>
+                    <td className="px-6 py-4 text-slate-600">{(ticketsByCounter[counter.id] || []).filter((t) => t.status === 'WAITING').length}</td>
                   </tr>
                 ))}
               </tbody>
@@ -203,8 +218,8 @@ export default function SupervisorPage() {
                 <tbody className="divide-y divide-slate-100">
                   {ticketStats?.waiting_tickets_by_company.map((item, index) => (
                     <tr key={index} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-slate-900">{item.flight__company__name}</td>
-                      <td className="px-6 py-4 text-slate-600">{item.flight__company__code}</td>
+                      <td className="px-6 py-4 font-medium text-slate-900">{(item as any).counter__assigned_company__name}</td>
+                      <td className="px-6 py-4 text-slate-600">{(item as any).counter__assigned_company__code}</td>
                       <td className="px-6 py-4">
                         <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold border border-blue-200">
                           {item.count}
