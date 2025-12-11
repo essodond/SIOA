@@ -176,8 +176,22 @@ class GenererTicketEtCalculerTAEView(APIView):
         
         # --- TÂCHE C : Attribution d'un Comptoir (avec stratégie file la plus courte) ---
         try:
-            # Utilise la fonction intelligente pour assigner le comptoir avec la file la plus courte
-            assigned_counter = assign_counter_to_ticket(company, new_ticket)
+            # Assignation intelligente du comptoir
+            assigned_counter = None
+
+            # Cas spécial : si le service est "Information", restreindre aux comptoirs B8 et B9
+            if service.name and 'information' in service.name.lower():
+                preferred_names = ['B8', 'B9']
+                preferred_counters = Counter.objects.filter(name__in=preferred_names, status__in=['LIBRE', 'OCCUPE'])
+                if preferred_counters.exists():
+                    counter_loads = {}
+                    for counter in preferred_counters:
+                        queue_count = Ticket.objects.filter(counter=counter, status__in=['WAITING', 'CALLED']).count()
+                        counter_loads[counter] = queue_count
+                    assigned_counter = min(counter_loads, key=counter_loads.get)
+            # Sinon utiliser la logique générique par compagnie
+            if assigned_counter is None:
+                assigned_counter = assign_counter_to_ticket(company, new_ticket)
         except Exception as e:
             # Gérer l'erreur si aucun comptoir n'est disponible ou autre problème
             print(f"Erreur lors de l'attribution du comptoir: {e}")
