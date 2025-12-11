@@ -215,6 +215,8 @@ class GenererTicketEtCalculerTAEView(APIView):
 
         # 3. Mise à jour du modèle Ticket
         new_ticket.estimated_waiting_time_minutes = estimated_time
+        if assigned_counter:
+            new_ticket.counter = assigned_counter
         new_ticket.save() # Sauvegarde tous les champs mis à jour
 
         # 4. Retour

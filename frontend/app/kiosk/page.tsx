@@ -30,8 +30,10 @@ export default function KioskPage() {
     setScanInput("")
     setError(null)
 
-    // Pour Information, générer immédiatement le ticket sans scanner
-    if (serviceId === 3) {
+    // Pour Information (détecté par nom), générer immédiatement le ticket sans scanner
+    const serviceObj = SERVICES.find((s) => s.id === serviceId)
+    const isInfoService = serviceObj?.name.toLowerCase().includes("information")
+    if (isInfoService) {
       setLoading(true)
       try {
         // Générer un pseudo ticket_number pour Information (p.ex. "XX" + random)
