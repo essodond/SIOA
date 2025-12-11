@@ -11,6 +11,59 @@ from django.core.exceptions import ObjectDoesNotExist
 from .models import Company, Counter, Ticket, Service, Flight
 from .serializers import EnregistrementSerializer, ServiceSerializer, TicketSerializer, FlightSerializer, CounterSerializer, TicketStatisticsSerializer
 
+
+def assign_counter_to_ticket(company, new_ticket):
+    """
+    Assigne le comptoir avec la file la plus courte à un nouveau ticket.
+    
+    Étapes :
+    1. Trouver la compagnie à partir du numéro de vol scanné ✅ (déjà fait)
+    2. Trouver tous les comptoirs assignés à cette compagnie ✅
+    3. Calculer la charge (tickets en WAITING ou CALLED ou non terminés) ✅
+    4. Choisir le comptoir avec la file la plus courte ✅
+    5. Attribuer ce comptoir au nouveau ticket ✅
+    
+    Args:
+        company: L'objet Company trouvé via le code IATA
+        new_ticket: Le nouveau Ticket à assigner
+    
+    Returns:
+        assigned_counter: L'objet Counter assigné ou None si aucun disponible
+    """
+    # 1. & 2. Trouver TOUS les comptoirs assignés à cette compagnie (même fermés)
+    all_counters = Counter.objects.filter(assigned_company=company)
+    
+    # 3. Filtrer les comptoirs ouverts (LIBRE ou OCCUPE, pas FERME)
+    open_counters = all_counters.filter(status__in=['LIBRE', 'OCCUPE'])
+    
+    if not open_counters.exists():
+        # Aucun comptoir ouvert pour cette compagnie
+        return None
+    
+    # 4. Calculer la charge pour chaque comptoir
+    counter_loads = {}
+    for counter in open_counters:
+        # Compter les tickets en WAITING ou CALLED (non terminés) assignés à ce comptoir
+        queue_count = Ticket.objects.filter(
+            counter=counter,
+            status__in=['WAITING', 'CALLED']
+        ).count()
+        counter_loads[counter] = queue_count
+    
+    # 5. Trouver le comptoir avec la file la plus courte
+    assigned_counter = min(counter_loads, key=counter_loads.get)
+    
+    # Assigner le ticket à ce comptoir
+    new_ticket.counter = assigned_counter
+    
+    # Mettre à jour le statut du comptoir si nécessaire (passer à OCCUPE s'il était LIBRE)
+    if assigned_counter.status == 'LIBRE':
+        assigned_counter.status = 'OCCUPE'
+        assigned_counter.save()
+    
+    return assigned_counter
+
+
 class ServiceListView(generics.ListAPIView):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
@@ -121,22 +174,14 @@ class GenererTicketEtCalculerTAEView(APIView):
             )
             details = f"Basé sur {waiting_tickets_count} personnes devant et {active_counters_count} comptoirs actifs de {company.name}."
         
-        # --- TÂCHE C : Attribution d'un Comptoir (si disponible) ---
-        assigned_counter = None
+        # --- TÂCHE C : Attribution d'un Comptoir (avec stratégie file la plus courte) ---
         try:
-            # On cherche un comptoir LIBRE pour la compagnie
-            assigned_counter = Counter.objects.filter(
-                assigned_company=company,
-                status="LIBRE"
-            ).order_by('name').first() # Prend le premier disponible
-
-            if assigned_counter:
-                new_ticket.counter = assigned_counter
-                assigned_counter.status = "OCCUPE"
-                assigned_counter.save()
+            # Utilise la fonction intelligente pour assigner le comptoir avec la file la plus courte
+            assigned_counter = assign_counter_to_ticket(company, new_ticket)
         except Exception as e:
             # Gérer l'erreur si aucun comptoir n'est disponible ou autre problème
             print(f"Erreur lors de l'attribution du comptoir: {e}")
+            assigned_counter = None
             # Le ticket sera créé sans comptoir assigné, ce qui est géré par null=True
 
         # 3. Mise à jour du modèle Ticket
