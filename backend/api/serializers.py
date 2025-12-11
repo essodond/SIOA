@@ -50,6 +50,7 @@ class CounterSerializer(serializers.ModelSerializer):
 
 class TicketStatisticsSerializer(serializers.Serializer):
     total_waiting_tickets = serializers.IntegerField()
+    average_wait_time_minutes = serializers.IntegerField()
     waiting_tickets_by_company = serializers.SerializerMethodField()
     waiting_tickets_by_service = serializers.SerializerMethodField()
     debug_tickets_info = serializers.ListField(child=serializers.DictField())

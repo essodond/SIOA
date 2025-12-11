@@ -204,6 +204,16 @@ class TicketStatisticsView(APIView):
         # Total waiting tickets
         total_waiting_tickets = Ticket.objects.filter(status__in=['WAITING', 'CALLED']).count()
 
+        # Calculate average waiting time for completed tickets
+        done_tickets = Ticket.objects.filter(status='DONE')
+        avg_wait_time = 0
+        if done_tickets.exists():
+            done_count = done_tickets.count()
+            if done_count > 0:
+                # Calculate average from estimated times
+                total_estimated_time = sum(t.estimated_waiting_time_minutes or 0 for t in done_tickets)
+                avg_wait_time = round(total_estimated_time / done_count) if total_estimated_time > 0 else 0
+
         # Waiting tickets by company
         debug_tickets_info = []
         all_tickets = Ticket.objects.all()
@@ -258,6 +268,7 @@ class TicketStatisticsView(APIView):
         try:
             data = {
                 'total_waiting_tickets': total_waiting_tickets,
+                'average_wait_time_minutes': avg_wait_time,
                 'waiting_tickets_by_company': waiting_tickets_by_company,
                 'waiting_tickets_by_service': list(waiting_tickets_by_service),
                 'debug_tickets_info': debug_tickets_info,

@@ -61,7 +61,7 @@ export default function SupervisorPage() {
   const activeCounters = counters.filter((c) => c.status === "OCCUPE" || c.status === "LIBRE").length
   // For avgWaitTime and totalServed, we don't have direct API support yet, so we'll keep placeholders or remove them.
   // For now, let's set them to 0 or derive them if possible from available data.
-  const avgWaitTime = 0 // Placeholder
+  const avgWaitTime = ticketStats?.average_wait_time_minutes || 0
   // Try to derive totalServed from debug info if present
   const totalServed = ticketStats?.debug_tickets_info ? ticketStats.debug_tickets_info.filter((t) => t.status === 'DONE').length : 0
 
