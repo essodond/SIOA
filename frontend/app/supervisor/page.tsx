@@ -26,7 +26,15 @@ export default function SupervisorPage() {
         setLoading(false)
       }
     }
+    
+    // Fetch immediately
     fetchData()
+    
+    // ⏱️ AUTO-REFRESH: Refresh every 2 seconds (REAL-TIME DASHBOARD)
+    const interval = setInterval(fetchData, 2000)
+    
+    // Cleanup interval on unmount
+    return () => clearInterval(interval)
   }, [])
 
   if (loading) {

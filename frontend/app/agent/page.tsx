@@ -91,7 +91,15 @@ export default function AgentPage() {
         }
       }
     }
+    
+    // Fetch immediately
     fetchTickets()
+    
+    // ⏱️ AUTO-REFRESH: Fetch tickets every 2 seconds (REAL-TIME)
+    const interval = setInterval(fetchTickets, 2000)
+    
+    // Cleanup interval on unmount or when selectedCounterId changes
+    return () => clearInterval(interval)
   }, [selectedCounterId])
 
   const refreshTickets = async () => {
