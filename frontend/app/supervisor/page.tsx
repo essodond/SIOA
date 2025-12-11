@@ -191,7 +191,16 @@ export default function SupervisorPage() {
                     <td className="px-6 py-4 font-semibold text-slate-900">{counter.assigned_company ? counter.assigned_company.name : "N/A"}</td>
                     <td className="px-6 py-4 text-slate-600">{counter.status === "OCCUPE" ? "Oui" : "Non"}</td>
                     <td className="px-6 py-4 font-semibold text-slate-900">{
-                      (ticketsByCounter[counter.id] || []).find((t) => t.status === 'CALLED')?.queue_number || 'N/A'
+                      (() => {
+                        const list = ticketsByCounter[counter.id] || []
+                        const values = list
+                          .map((t) => Number(t.estimated_waiting_time_minutes) || 0)
+                          .filter((v) => v > 0)
+                        if (values.length === 0) return 'N/A'
+                        const sum = values.reduce((s, v) => s + v, 0)
+                        const avg = Math.round(sum / values.length)
+                        return `${avg}m`
+                      })()
                     }</td>
                     <td className="px-6 py-4 text-slate-600">{(ticketsByCounter[counter.id] || []).filter((t) => t.status === 'WAITING').length}</td>
                   </tr>
