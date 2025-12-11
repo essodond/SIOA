@@ -54,12 +54,7 @@ export default function Home() {
             Système de Queue Existant
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link href="/kiosk" className="w-full">
-              <Button className="w-full h-24 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold flex flex-col items-center justify-center gap-2 rounded-xl">
-                <Plane className="h-6 w-6" />
-                Borne Passagers
-              </Button>
-            </Link>
+            {/* Borne Passagers removed as requested */}
             <Link href="/agent" className="w-full">
               <Button className="w-full h-24 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold flex flex-col items-center justify-center gap-2 rounded-xl">
                 <Users className="h-6 w-6" />
