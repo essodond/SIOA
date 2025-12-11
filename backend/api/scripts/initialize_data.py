@@ -9,7 +9,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 django.setup()
 
 # Importation des modèles après la configuration de Django
-from api.models import Company, Counter, Service, Flight
+from api.models import Company, Counter, Service, Flight, Ticket
 
 # --- VARIABLES ET DONNÉES À INITIALISER ---
 
@@ -66,7 +66,7 @@ def initialize_companies_and_services():
         companies[data['code']] = company
         print(f"  Compagnie: {data['name']} ({data['code']}) créé/vérifié.")
         
-    return companies
+    return companies, Service.objects.all()
 
 def initialize_counters(companies):
     """Crée les 24 Comptoirs et les assigne à des Compagnies pour les tests."""
@@ -83,7 +83,9 @@ def initialize_counters(companies):
     af = companies.get('AF')
     et = companies.get('ET')
     at = companies.get('AT')
-    
+
+    all_counters = [] # Added this line
+
     for name in COUNTER_NAMES:
         assigned_to = None
         status_c = 'LIBRE'
@@ -104,10 +106,10 @@ def initialize_counters(companies):
                 'status': status_c
             }
         )
+        all_counters.append(counter)
         status_text = f"Assigné à {counter.assigned_company.name}, Statut: {counter.status}" if counter.assigned_company else "LIBRE"
         print(f"  Comptoir {name} créé/vérifié. {status_text}")
-
-
+    return all_counters
 def initialize_flights(companies):
     """Crée quelques Vols pour tester la logique de routage."""
     print("\n--- 3. Initialisation des Vols de test ---")
@@ -148,15 +150,77 @@ def initialize_flights(companies):
     )
     print("  4 Vols de test créés/vérifiés.")
 
+
+def initialize_tickets(all_counters):
+    """Crée des tickets de test avec différents statuts et associations."""
+    print("\n--- 4. Initialisation des Tickets de test ---")
+    
+    now = timezone.now()
+    all_services = Service.objects.all()
+    
+    print(f"Debug: all_counters type: {type(all_counters)}, len: {len(all_counters) if all_counters else 0}, content: {[c.name for c in all_counters] if all_counters else 'N/A'}")
+    print(f"Debug: all_services type: {type(all_services)}, len: {len(all_services) if all_services else 0}, content: {[s.name for s in all_services] if all_services else 'N/A'}")
+
+    # Créer quelques tickets en attente pour le comptoir A1 (Air France)
+    if all_counters and all_services:
+        counter_a1 = next((c for c in all_counters if c.name == 'A1'), None)
+        service_enregistrement = next((s for s in all_services if s.name == 'Enregistrement & Bagages'), None)
+        print(f"Debug: counter_a1: {counter_a1}, service_enregistrement: {service_enregistrement}")
+
+        if counter_a1 and service_enregistrement:
+            print(f"Debug: Creating ticket AF1001 with counter: {counter_a1.name} (Company: {counter_a1.assigned_company.name if counter_a1.assigned_company else 'N/A'}), Service: {service_enregistrement.name}")
+            Ticket.objects.get_or_create(
+                ticket_number='AF1001',
+                defaults={
+                    'counter': counter_a1,
+                    'service': service_enregistrement,
+                    'status': 'WAITING',
+                    'created_at': now - timedelta(minutes=10)
+                }
+            )
+            print(f"Debug: Creating ticket AF1002 with counter: {counter_a1.name} (Company: {counter_a1.assigned_company.name if counter_a1.assigned_company else 'N/A'}), Service: {service_enregistrement.name}")
+            Ticket.objects.get_or_create(
+                ticket_number='AF1002',
+                defaults={
+                    'counter': counter_a1,
+                    'service': service_enregistrement,
+                    'status': 'WAITING',
+                    'created_at': now - timedelta(minutes=5)
+                }
+            )
+            print("  2 tickets en attente pour A1 (Air France) créés/vérifiés.")
+
+        # Créer un ticket appelé pour le comptoir A5 (Ethiopian Airlines)
+        counter_a5 = next((c for c in all_counters if c.name == 'A5'), None)
+        service_assistance = next((s for s in all_services if s.name == 'Assistance spéciale'), None)
+        print(f"Debug: counter_a5: {counter_a5}, service_assistance: {service_assistance}")
+
+        if counter_a5 and service_assistance:
+            print(f"Debug: Creating ticket ET2001 with counter: {counter_a5.name} (Company: {counter_a5.assigned_company.name if counter_a5.assigned_company else 'N/A'}), Service: {service_assistance.name}")
+            Ticket.objects.get_or_create(
+                ticket_number='ET2001',
+                defaults={
+                    'counter': counter_a5,
+                    'service': service_assistance,
+                    'status': 'CALLED',
+                    'created_at': now - timedelta(minutes=15),
+                    'called_at': now - timedelta(minutes=2)
+                }
+            )
+            print("  1 ticket appelé pour A5 (Ethiopian Airlines) créé/vérifié.")
+    else:
+        print("  Impossible de créer des tickets de test: comptoirs ou services non disponibles.")
+
 def run_initialization():
     """Fonction principale."""
     print("===========================================")
     print(" DÉBUT DE L'INITIALISATION DES DONNÉES ")
     print("===========================================")
 
-    companies = initialize_companies_and_services()
-    initialize_counters(companies)
+    companies, services = initialize_companies_and_services()
+    all_counters = initialize_counters(companies)
     initialize_flights(companies)
+    initialize_tickets(all_counters)
     
     print("\n===========================================")
     print(" INITIALISATION TERMINÉE AVEC SUCCÈS. ")

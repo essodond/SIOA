@@ -3,21 +3,25 @@ import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Smartphone, Zap } from "lucide-react"
-import { getServices, createTicket, getTicketByNumber, Service, Ticket } from "@/lib/api"
+import { getServices, generateQueueTicket, getFlightDetails, Service, Ticket, Flight } from "@/lib/api"
 
 export default function SIOAKiosk() {
-  const [step, setStep] = useState<"menu" | "scan" | "confirmation" | "result">("menu")
+  const [step, setStep] = useState<"menu" | "scan" | "flight_confirmation" | "result">("menu")
   const [scannedTicketNumber, setScannedTicketNumber] = useState<string>("")
   const [searchInput, setSearchInput] = useState<string>("")
   const [services, setServices] = useState<Service[]>([])
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [currentTicket, setCurrentTicket] = useState<Ticket | null>(null)
+  const [currentFlight, setCurrentFlight] = useState<Flight | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const fetchServices = async () => {
       const fetchedServices = await getServices()
-      setServices(fetchedServices)
+      const filteredServices = fetchedServices.filter(
+        (service) => service.name === "Enregistrement" || service.name === "Information"
+      )
+      setServices(filteredServices)
     }
     fetchServices()
   }, [])
@@ -27,16 +31,38 @@ export default function SIOAKiosk() {
     setSearchInput("")
     setSelectedService(null)
     setCurrentTicket(null)
+    setCurrentFlight(null)
     setStep("menu")
   }
 
   const handleScan = async (ticketNumber: string) => {
-    const ticket = await getTicketByNumber(ticketNumber);
-    if (ticket) {
-      setCurrentTicket(ticket);
+    if (!selectedService) {
+      alert("Veuillez sélectionner un service d'abord.");
+      return;
+    }
+
+    const flight = await getFlightDetails(ticketNumber);
+    if (flight) {
+      setCurrentFlight(flight);
+      setScannedTicketNumber(ticketNumber);
+      setStep("flight_confirmation");
+    } else {
+      alert("Vol non trouvé. Veuillez vérifier le numéro de vol.");
+    }
+  }
+
+  const handleConfirmFlight = async () => {
+    if (!selectedService || !currentFlight || !scannedTicketNumber) {
+      alert("Une erreur est survenue. Veuillez réessayer.");
+      return;
+    }
+
+    const newTicket = await generateQueueTicket(selectedService.id, scannedTicketNumber);
+    if (newTicket) {
+      setCurrentTicket(newTicket);
       setStep("result");
     } else {
-      alert("Ticket non trouvé ou invalide.");
+      alert("Erreur lors de la génération du ticket d'attente.");
     }
   }
 
@@ -72,7 +98,7 @@ export default function SIOAKiosk() {
                     setSelectedService(service)
                     setStep("scan")
                   }}
-                  className="h-24 text-xl font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
+                  className={`h-24 text-xl font-bold rounded-xl text-white ${service.name === "Information" ? "bg-orange-500 hover:bg-orange-600" : "bg-blue-600 hover:bg-blue-700"}`}
                 >
                   {service.name}
                 </Button>
@@ -131,6 +157,41 @@ export default function SIOAKiosk() {
           </div>
         )}
 
+        {step === "flight_confirmation" && currentFlight && selectedService && (
+          <div className="w-full space-y-6 text-center">
+            <div className="space-y-3">
+              <h2 className="text-3xl font-bold text-gray-900">Confirmer votre vol</h2>
+              <p className="text-gray-600">Veuillez vérifier les informations de votre vol.</p>
+            </div>
+
+            <div className="glass rounded-2xl p-8 space-y-4 text-left">
+              <p className="text-xl font-bold text-gray-900">Vol: {currentFlight.flight_number}</p>
+              <p className="text-gray-700">Compagnie: {currentFlight.company_name} ({currentFlight.company_code})</p>
+              <p className="text-gray-700">Heure de départ: {new Date(currentFlight.departure_time).toLocaleString()}</p>
+              <p className="text-gray-700">Statut: {currentFlight.status}</p>
+              {currentFlight.gate && <p className="text-gray-700">Porte: {currentFlight.gate}</p>}
+              <p className="text-gray-700">Service sélectionné: {selectedService.name}</p>
+            </div>
+
+            <div className="space-y-3">
+              <Button
+                onClick={handleConfirmFlight}
+                className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-semibold"
+              >
+                Confirmer et générer le ticket
+              </Button>
+
+              <Button
+                onClick={() => setStep("scan")}
+                variant="outline"
+                className="w-full h-12 border-2 border-gray-300"
+              >
+                Annuler
+              </Button>
+            </div>
+          </div>
+        )}
+
         {step === "result" && currentTicket && selectedService && (
           <div className="w-full space-y-6 text-center">
             <div className="space-y-3">
@@ -146,8 +207,11 @@ export default function SIOAKiosk() {
               </div>
 
               <div className="space-y-2">
-                <p className="text-2xl font-bold text-gray-900">{currentTicket.ticket_number}</p>
+                <p className="text-2xl font-bold text-gray-900">Numéro de vol: {currentTicket.ticket_number}</p>
+                <p className="text-2xl font-bold text-gray-900">Votre numéro d'attente: {currentTicket.queue_number}</p>
                 <p className="text-gray-600">Service: {selectedService.name}</p>
+                <p className="text-gray-600">Comptoir attribué: {currentTicket.assigned_counter}</p>
+                <p className="text-gray-600">Temps d'attente estimé: {currentTicket.estimated_waiting_time_minutes} minutes</p>
                 <p className="text-gray-600">Créé le: {new Date(currentTicket.created_at).toLocaleString()}</p>
                 <p className="text-gray-600">Statut: {currentTicket.status}</p>
               </div>
@@ -155,7 +219,8 @@ export default function SIOAKiosk() {
               <div className="bg-blue-50 rounded-lg p-4">
                 <p className="text-sm text-gray-600 mb-2">PROCHAINE ÉTAPE</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  Veuillez vous diriger vers le comptoir de {selectedService.name}
+                  Veuillez vous diriger vers le comptoir {currentTicket.assigned_counter} pour le service {selectedService.name}.
+                  Temps d'attente estimé: {currentTicket.estimated_waiting_time_minutes} minutes.
                 </p>
               </div>
             </div>

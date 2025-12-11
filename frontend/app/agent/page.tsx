@@ -1,60 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Volume2, SkipForward, Phone, Clock } from "lucide-react"
+import { getCounters, getCounterTickets, callTicket, serveTicket, skipTicket, Counter, Ticket } from "@/lib/api"
 
-interface Ticket {
-  number: string
-  service: string
-  arrivedTime: string
-  waitTime: number
-  status: "waiting" | "called" | "served"
-}
-
-interface Queue {
-  id: string
-  counter: string
-  tickets: string[]
-  currentCalled: string | null
-}
-
-const INITIAL_QUEUES: Queue[] = [
-  {
-    id: "counter-1",
-    counter: "Comptoir 1",
-    tickets: ["0101", "0102", "0103", "0104", "0105"],
-    currentCalled: "0101",
-  },
-  {
-    id: "counter-2",
-    counter: "Comptoir 2",
-    tickets: ["0201", "0202", "0203", "0204"],
-    currentCalled: "0201",
-  },
-  {
-    id: "counter-3",
-    counter: "Comptoir 3",
-    tickets: ["0301", "0302", "0303"],
-    currentCalled: null,
-  },
-]
-
-const TICKET_DETAILS: { [key: string]: Ticket } = {
-  "0101": { number: "0101", service: "Enregistrement", arrivedTime: "09:15", waitTime: 12, status: "called" },
-  "0102": { number: "0102", service: "Enregistrement", arrivedTime: "09:18", waitTime: 9, status: "waiting" },
-  "0103": { number: "0103", service: "Bagages", arrivedTime: "09:22", waitTime: 5, status: "waiting" },
-  "0104": { number: "0104", service: "Enregistrement", arrivedTime: "09:25", waitTime: 2, status: "waiting" },
-  "0105": { number: "0105", service: "Info", arrivedTime: "09:28", waitTime: 0, status: "waiting" },
-  "0201": { number: "0201", service: "Bagages", arrivedTime: "09:16", waitTime: 11, status: "called" },
-  "0202": { number: "0202", service: "Bagages", arrivedTime: "09:20", waitTime: 7, status: "waiting" },
-  "0203": { number: "0203", service: "Enregistrement", arrivedTime: "09:24", waitTime: 3, status: "waiting" },
-  "0204": { number: "0204", service: "Info", arrivedTime: "09:27", waitTime: 0, status: "waiting" },
-  "0301": { number: "0301", service: "Info", arrivedTime: "09:19", waitTime: 8, status: "waiting" },
-  "0302": { number: "0302", service: "Enregistrement", arrivedTime: "09:23", waitTime: 4, status: "waiting" },
-  "0303": { number: "0303", service: "Bagages", arrivedTime: "09:26", waitTime: 1, status: "waiting" },
-}
 
 const ticketNumberToFrench = (ticket: string): string => {
   const digits = ticket.split("")
@@ -96,30 +47,103 @@ const getCounterNumber = (counterName: string): string => {
 }
 
 export default function AgentPage() {
-  const [queues, setQueues] = useState<Queue[]>(INITIAL_QUEUES)
-  const [selectedCounter, setSelectedCounter] = useState("counter-1")
+  const [counters, setCounters] = useState<Counter[]>([])
+  const [selectedCounterId, setSelectedCounterId] = useState<number | null>(null)
+  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const currentQueue = queues.find((q) => q.id === selectedCounter)!
+  const currentCounter = counters.find((c) => c.id === selectedCounterId)
+  const currentCalledTicket = tickets.find((t) => t.status === "CALLED")
+  const waitingTickets = tickets.filter((t) => t.status === "WAITING").sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 
-  const callNextTicket = () => {
-    const nextIndex = currentQueue.currentCalled ? currentQueue.tickets.indexOf(currentQueue.currentCalled) + 1 : 0
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true)
+        const fetchedCounters = await getCounters()
+        setCounters(fetchedCounters)
+        if (fetchedCounters.length > 0) {
+          setSelectedCounterId(fetchedCounters[0].id)
+        }
+      } catch (err) {
+        setError("Failed to load counters.")
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
 
-    if (nextIndex < currentQueue.tickets.length) {
-      const nextTicket = currentQueue.tickets[nextIndex]
+  useEffect(() => {
+    async function fetchTickets() {
+      if (selectedCounterId) {
+        try {
+          setLoading(true)
+          const fetchedTickets = await getCounterTickets(selectedCounterId)
+          setTickets(fetchedTickets)
+        } catch (err) {
+          setError("Failed to load tickets for the selected counter.")
+          console.error(err)
+        } finally {
+          setLoading(false)
+        }
+      }
+    }
+    fetchTickets()
+  }, [selectedCounterId])
 
-      const counterNum = getCounterNumber(currentQueue.counter)
-      const ticketFrench = ticketNumberToFrench(nextTicket)
-      const ticketEnglish = ticketNumberToEnglish(nextTicket)
+  const refreshTickets = async () => {
+    if (selectedCounterId) {
+      try {
+        const fetchedTickets = await getCounterTickets(selectedCounterId)
+        setTickets(fetchedTickets)
+      } catch (err) {
+        setError("Failed to refresh tickets.")
+        console.error(err)
+      }
+    }
+  }
 
-      const frenchAnnouncement = `Le ticket ${ticketFrench} est attendu au comptoir ${counterNum}`
-      const englishAnnouncement = `Ticket ${ticketEnglish} is called at counter ${counterNum}`
+  const callNextTicketHandler = async () => {
+    if (waitingTickets.length > 0 && currentCounter) {
+      const nextTicket = waitingTickets[0]
+      try {
+        await callTicket(nextTicket.id)
+        speak(`Le ticket ${ticketNumberToFrench(nextTicket.queue_number)} est attendu au comptoir ${getCounterNumber(currentCounter.name)}`, "fr-FR")
+        setTimeout(() => {
+          speak(`Ticket ${ticketNumberToEnglish(nextTicket.queue_number)} is called at counter ${getCounterNumber(currentCounter.name)}`, "en-US")
+        }, 2000)
+        refreshTickets()
+      } catch (err) {
+        setError("Failed to call next ticket.")
+        console.error(err)
+      }
+    }
+  }
 
-      speak(frenchAnnouncement, "fr-FR")
-      setTimeout(() => {
-        speak(englishAnnouncement, "en-US")
-      }, frenchAnnouncement.length * 80)
+  const serveCurrentTicketHandler = async () => {
+    if (currentCalledTicket) {
+      try {
+        await serveTicket(currentCalledTicket.id)
+        refreshTickets()
+      } catch (err) {
+        setError("Failed to serve ticket.")
+        console.error(err)
+      }
+    }
+  }
 
-      setQueues(queues.map((q) => (q.id === selectedCounter ? { ...q, currentCalled: nextTicket } : q)))
+  const skipCurrentTicketHandler = async () => {
+    if (currentCalledTicket) {
+      try {
+        await skipTicket(currentCalledTicket.id)
+        refreshTickets()
+      } catch (err) {
+        setError("Failed to skip ticket.")
+        console.error(err)
+      }
     }
   }
 
@@ -132,17 +156,11 @@ export default function AgentPage() {
     }
   }
 
-  const skipTicket = () => {
-    if (currentQueue.currentCalled) {
-      const currentIndex = currentQueue.tickets.indexOf(currentQueue.currentCalled)
-      if (currentIndex < currentQueue.tickets.length - 1) {
-        const nextTicket = currentQueue.tickets[currentIndex + 1]
-        setQueues(queues.map((q) => (q.id === selectedCounter ? { ...q, currentCalled: nextTicket } : q)))
-      }
-    }
-  }
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+  if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">Error: {error}</div>
+  if (!currentCounter) return <div className="min-h-screen flex items-center justify-center">Please select a counter.</div>
 
-  const visibleTickets = currentQueue.tickets.slice(0, 5).map((ticketNum) => TICKET_DETAILS[ticketNum])
+  const visibleTickets = tickets.filter(t => t.status !== "DONE" && t.status !== "CANCELLED").sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).slice(0, 5)
 
   return (
     <div className="min-h-screen bg-white p-8">
@@ -151,7 +169,7 @@ export default function AgentPage() {
         <div className="flex items-center justify-between mb-12">
           <div>
             <h1 className="text-5xl font-bold text-slate-900">Console Agent</h1>
-            <p className="text-slate-600 text-lg mt-2">{currentQueue.counter}</p>
+            <p className="text-slate-600 text-lg mt-2">{currentCounter.name}</p>
           </div>
           <Link href="/">
             <Button
@@ -168,10 +186,10 @@ export default function AgentPage() {
         <div className="space-y-8">
           <div className="glass-light rounded-3xl p-12 text-center space-y-4 bg-gradient-to-br from-blue-50 to-blue-100">
             <p className="text-slate-600 text-sm font-medium uppercase tracking-widest">En service</p>
-            <h2 className="text-9xl font-bold text-blue-600 tracking-tight">{currentQueue.currentCalled || "—"}</h2>
+            <h2 className="text-9xl font-bold text-blue-600 tracking-tight">{currentCalledTicket?.queue_number || "—"}</h2>
             <p className="text-slate-600 text-lg">
-              {currentQueue.currentCalled
-                ? `${currentQueue.tickets.length - currentQueue.tickets.indexOf(currentQueue.currentCalled) - 1} tickets en attente`
+              {currentCalledTicket
+                ? `${waitingTickets.length} tickets en attente`
                 : "Aucun ticket appelé"}
             </p>
           </div>
@@ -185,44 +203,40 @@ export default function AgentPage() {
                     <th className="pb-3 px-4 text-slate-700 font-semibold">Ticket</th>
                     <th className="pb-3 px-4 text-slate-700 font-semibold">Service</th>
                     <th className="pb-3 px-4 text-slate-700 font-semibold">Arrivée</th>
-                    <th className="pb-3 px-4 text-slate-700 font-semibold">Attente</th>
                     <th className="pb-3 px-4 text-slate-700 font-semibold">Statut</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visibleTickets.map((ticket) => (
                     <tr
-                      key={ticket.number}
+                      key={ticket.id}
                       className={`border-b border-slate-100 hover:bg-slate-100 transition-colors ${
-                        currentQueue.currentCalled === ticket.number ? "bg-blue-100" : ""
+                        currentCalledTicket?.id === ticket.id ? "bg-blue-100" : ""
                       }`}
                     >
                       <td className="py-4 px-4">
-                        <span className="text-slate-900 font-bold text-lg">{ticket.number}</span>
+                        <span className="text-slate-900 font-bold text-lg">{ticket.queue_number}</span>
                       </td>
                       <td className="py-4 px-4">
-                        <span className="text-slate-700">{ticket.service}</span>
+                        <span className="text-slate-700">{ticket.service_name}</span>
                       </td>
                       <td className="py-4 px-4">
                         <span className="text-slate-600 flex items-center gap-2">
                           <Clock className="h-4 w-4" />
-                          {ticket.arrivedTime}
+                          {new Date(ticket.created_at).toLocaleTimeString()}
                         </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-slate-700">{ticket.waitTime} min</span>
                       </td>
                       <td className="py-4 px-4">
                         <span
                           className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                            ticket.status === "called"
+                            ticket.status === "CALLED"
                               ? "bg-blue-200 text-blue-900"
-                              : ticket.status === "served"
+                              : ticket.status === "DONE"
                                 ? "bg-green-200 text-green-900"
                                 : "bg-slate-200 text-slate-900"
                           }`}
                         >
-                          {ticket.status === "called" ? "Appelé" : ticket.status === "served" ? "Servi" : "En attente"}
+                          {ticket.status === "CALLED" ? "Appelé" : ticket.status === "DONE" ? "Servi" : "En attente"}
                         </span>
                       </td>
                     </tr>
@@ -235,18 +249,18 @@ export default function AgentPage() {
           <div className="space-y-4">
             <p className="text-slate-700 text-sm font-medium uppercase tracking-widest">Comptoirs</p>
             <div className="grid grid-cols-3 gap-4">
-              {queues.map((queue) => (
+              {counters.map((counter) => (
                 <button
-                  key={queue.id}
-                  onClick={() => setSelectedCounter(queue.id)}
+                  key={counter.id}
+                  onClick={() => setSelectedCounterId(counter.id)}
                   className={`p-4 rounded-2xl font-semibold transition-all duration-200 ${
-                    selectedCounter === queue.id
+                    selectedCounterId === counter.id
                       ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
                       : "glass text-slate-700 hover:glass-light hover:text-slate-900 bg-slate-100 border border-slate-200"
                   }`}
                 >
-                  <div className="text-lg">{queue.counter}</div>
-                  <div className="text-sm opacity-75 mt-1">{queue.tickets.length} en attente</div>
+                  <div className="text-lg">{counter.name}</div>
+                  <div className="text-sm opacity-75 mt-1">{tickets.filter(t => t.assigned_counter === counter.id && t.status === "WAITING").length} en attente</div>
                 </button>
               ))}
             </div>
@@ -254,14 +268,21 @@ export default function AgentPage() {
 
           <div className="grid grid-cols-2 gap-4 pt-4">
             <Button
-              onClick={callNextTicket}
+              onClick={callNextTicketHandler}
               className="h-20 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold text-lg rounded-2xl shadow-lg shadow-green-500/30 transition-all"
             >
               <Volume2 className="mr-3 h-7 w-7" />
               Appeler
             </Button>
             <Button
-              onClick={skipTicket}
+              onClick={serveCurrentTicketHandler}
+              className="h-20 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-lg rounded-2xl shadow-lg shadow-blue-500/30 transition-all"
+            >
+              <Phone className="mr-3 h-7 w-7" />
+              Servi
+            </Button>
+            <Button
+              onClick={skipCurrentTicketHandler}
               className="h-20 glass text-slate-900 border-slate-200 hover:glass-light font-semibold text-lg rounded-2xl bg-slate-100"
             >
               <SkipForward className="mr-3 h-7 w-7" />
@@ -273,10 +294,7 @@ export default function AgentPage() {
             <p className="text-slate-700 text-sm font-medium uppercase tracking-widest">Prochain ticket</p>
             <div className="flex items-center justify-between">
               <div className="text-5xl font-bold text-slate-900">
-                {currentQueue.currentCalled &&
-                currentQueue.tickets.indexOf(currentQueue.currentCalled) < currentQueue.tickets.length - 1
-                  ? currentQueue.tickets[currentQueue.tickets.indexOf(currentQueue.currentCalled) + 1]
-                  : "—"}
+                {waitingTickets.length > 0 ? waitingTickets[0].queue_number : "—"}
               </div>
               <Phone className="h-8 w-8 text-slate-400" />
             </div>

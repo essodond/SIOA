@@ -1,43 +1,57 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, TrendingUp, Users, Clock, CheckCircle2 } from "lucide-react"
-
-interface CounterStats {
-  id: string
-  name: string
-  currentTicket: string
-  queued: number
-  avgWaitTime: number
-  served: number
-  status: "active" | "idle" | "break"
-}
-
-const COUNTER_STATS: CounterStats[] = [
-  { id: "1", name: "Comptoir 1", currentTicket: "0101", queued: 5, avgWaitTime: 8, served: 24, status: "active" },
-  { id: "2", name: "Comptoir 2", currentTicket: "0201", queued: 4, avgWaitTime: 6, served: 28, status: "active" },
-  { id: "3", name: "Comptoir 3", currentTicket: "Inactif", queued: 0, avgWaitTime: 0, served: 15, status: "idle" },
-  { id: "4", name: "Comptoir 4", currentTicket: "0401", queued: 7, avgWaitTime: 12, served: 22, status: "active" },
-]
+import { getCounters, getTicketStatistics, Counter, TicketStatistics } from "@/lib/api"
 
 export default function SupervisorPage() {
-  const [stats, setStats] = useState(COUNTER_STATS)
+  const [counters, setCounters] = useState<Counter[]>([])
+  const [ticketStats, setTicketStats] = useState<TicketStatistics | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const totalQueued = stats.reduce((sum, s) => sum + s.queued, 0)
-  const activeCounters = stats.filter((s) => s.status === "active").length
-  const avgWaitTime = Math.round(stats.reduce((sum, s) => sum + s.avgWaitTime, 0) / stats.length)
-  const totalServed = stats.reduce((sum, s) => sum + s.served, 0)
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const fetchedCounters = await getCounters()
+        const fetchedTicketStats = await getTicketStatistics()
+        setCounters(fetchedCounters)
+        setTicketStats(fetchedTicketStats)
+      } catch (err) {
+        setError("Failed to fetch data")
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Chargement...</div>
+  }
+
+  if (error) {
+    return <div className="min-h-screen flex items-center justify-center text-red-500">Erreur: {error}</div>
+  }
+
+  const totalQueued = ticketStats?.total_waiting_tickets || 0
+  const activeCounters = counters.filter((c) => c.status === "OCCUPE" || c.status === "LIBRE").length
+  // For avgWaitTime and totalServed, we don't have direct API support yet, so we'll keep placeholders or remove them.
+  // For now, let's set them to 0 or derive them if possible from available data.
+  const avgWaitTime = 0 // Placeholder
+  const totalServed = 0 // Placeholder
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active":
+      case "LIBRE":
         return "bg-emerald-100 text-emerald-700 border-emerald-200"
-      case "idle":
+      case "OCCUPE":
+        return "bg-blue-100 text-blue-700 border-blue-200"
+      case "FERME":
         return "bg-slate-100 text-slate-600 border-slate-200"
-      case "break":
-        return "bg-amber-100 text-amber-700 border-amber-200"
       default:
         return "bg-slate-100 text-slate-600"
     }
@@ -45,12 +59,12 @@ export default function SupervisorPage() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "active":
-        return "Actif"
-      case "idle":
-        return "Inactif"
-      case "break":
-        return "Pause"
+      case "LIBRE":
+        return "Libre"
+      case "OCCUPE":
+        return "Occupé"
+      case "FERME":
+        return "Fermé"
       default:
         return status
     }
@@ -143,24 +157,20 @@ export default function SupervisorPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {stats.map((stat) => (
-                  <tr key={stat.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900">{stat.name}</td>
+                {counters.map((counter) => (
+                  <tr key={counter.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 font-medium text-slate-900">{counter.name}</td>
                     <td className="px-6 py-4">
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(stat.status)}`}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(counter.status)}`}
                       >
-                        {getStatusLabel(stat.status)}
+                        {getStatusLabel(counter.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-semibold text-slate-900">{stat.currentTicket}</td>
-                    <td className="px-6 py-4">
-                      <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold border border-blue-200">
-                        {stat.queued}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">{stat.avgWaitTime}m</td>
-                    <td className="px-6 py-4 font-semibold text-slate-900">{stat.served}</td>
+                    <td className="px-6 py-4 font-semibold text-slate-900">{counter.assigned_company ? counter.assigned_company.name : "N/A"}</td>
+                    <td className="px-6 py-4 text-slate-600">{counter.status === "OCCUPE" ? "Oui" : "Non"}</td>
+                    <td className="px-6 py-4 text-slate-600">N/A</td> {/* Placeholder for current ticket */}
+                    <td className="px-6 py-4 text-slate-600">N/A</td> {/* Placeholder for queued */}
                   </tr>
                 ))}
               </tbody>
@@ -168,9 +178,69 @@ export default function SupervisorPage() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h2 className="text-lg font-semibold text-slate-900">Tickets en Attente par Compagnie</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">Compagnie</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">Code</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">Tickets</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {ticketStats?.waiting_tickets_by_company.map((item, index) => (
+                    <tr key={index} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4 font-medium text-slate-900">{item.flight__company__name}</td>
+                      <td className="px-6 py-4 text-slate-600">{item.flight__company__code}</td>
+                      <td className="px-6 py-4">
+                        <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold border border-blue-200">
+                          {item.count}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h2 className="text-lg font-semibold text-slate-900">Tickets en Attente par Service</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">Service</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">Tickets</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {ticketStats?.waiting_tickets_by_service.map((item, index) => (
+                    <tr key={index} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4 font-medium text-slate-900">{item.service__name}</td>
+                      <td className="px-6 py-4">
+                        <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold border border-blue-200">
+                          {item.count}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-5 border border-amber-100">
           <p className="text-sm text-amber-900 font-medium">
-            Comptoir 4 : Temps d'attente élevé (12m) - Envisager d'ouvrir un guichet supplémentaire
+            Les données affichées sont en temps réel. Actualisez la page pour les dernières mises à jour.
           </p>
         </div>
       </div>
