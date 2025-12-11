@@ -50,6 +50,7 @@ export default function AgentPage() {
   const [counters, setCounters] = useState<Counter[]>([])
   const [selectedCounterId, setSelectedCounterId] = useState<number | null>(null)
   const [tickets, setTickets] = useState<Ticket[]>([])
+  const [waitingCounts, setWaitingCounts] = useState<Record<number, number>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -75,6 +76,43 @@ export default function AgentPage() {
     }
     fetchData()
   }, [])
+
+  // Poll waiting counts per counter silently to update labels under counter names
+  useEffect(() => {
+    let mounted = true
+
+    async function fetchCounts() {
+      try {
+        if (counters.length === 0) return
+        const promises = counters.map(async (c) => {
+          const t = await getCounterTickets(c.id)
+          const waiting = t.filter((x) => x.status === 'WAITING').length
+          return { id: c.id, waiting }
+        })
+        const results = await Promise.all(promises)
+        const map: Record<number, number> = {}
+        results.forEach((r) => (map[r.id] = r.waiting))
+        if (!mounted) return
+        // update only if changed
+        setWaitingCounts((prev) => {
+          try {
+            if (JSON.stringify(prev) === JSON.stringify(map)) return prev
+          } catch (e) {}
+          return map
+        })
+      } catch (e) {
+        console.error('Error fetching waiting counts', e)
+      }
+    }
+
+    // initial fetch
+    fetchCounts()
+    const interval = setInterval(fetchCounts, 2000)
+    return () => {
+      mounted = false
+      clearInterval(interval)
+    }
+  }, [counters])
 
   useEffect(() => {
     async function fetchTickets() {
@@ -276,7 +314,7 @@ export default function AgentPage() {
                   }`}
                 >
                   <div className="text-lg">{counter.name}</div>
-                  <div className="text-sm opacity-75 mt-1">{tickets.filter(t => t.assigned_counter === counter.id && t.status === "WAITING").length} en attente</div>
+                  <div className="text-sm opacity-75 mt-1">{waitingCounts[counter.id] ?? 0} en attente</div>
                 </button>
               ))}
             </div>
