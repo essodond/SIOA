@@ -1,7 +1,8 @@
 "use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Plane, Users, Monitor, BarChart3, Settings, Smartphone, Radio } from "lucide-react"
+import { Plane, Monitor, Settings, Smartphone, Radio } from "lucide-react"
 
 export default function Home() {
   return (
@@ -26,26 +27,28 @@ export default function Home() {
                 Borne Interactive
               </Button>
             </Link>
+
             <Link href="/admin" className="w-full">
               <Button className="w-full h-24 bg-green-600 hover:bg-green-700 text-white font-semibold flex flex-col items-center justify-center gap-2 rounded-xl">
                 <Settings className="h-6 w-6" />
                 Admin (SALT/ANAC)
               </Button>
             </Link>
+
             <Link href="/sioa-tae" className="w-full">
               <Button className="w-full h-24 bg-orange-600 hover:bg-orange-700 text-white font-semibold flex flex-col items-center justify-center gap-2 rounded-xl">
                 <Radio className="h-6 w-6" />
-        {/* Legacy System Section removed per request */}
-            <Link href="/supervisor" className="w-full">
-              <Button className="w-full h-24 bg-red-600 hover:bg-red-700 text-white font-semibold flex flex-col items-center justify-center gap-2 rounded-xl">
-        {/* Info Section removed per request */}
-            <li className="flex gap-3">
-              <span className="text-blue-600 font-bold">•</span>
-              <span>
-                <strong>Multilangue:</strong> Interface en français avec annonces bilingues
-              </span>
-            </li>
-          </ul>
+                Affichage TAE
+              </Button>
+            </Link>
+
+            <Link href="/sioa-fids" className="w-full">
+              <Button className="w-full h-24 bg-purple-600 hover:bg-purple-700 text-white font-semibold flex flex-col items-center justify-center gap-2 rounded-xl">
+                <Monitor className="h-6 w-6" />
+                Affichage FIDS
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
